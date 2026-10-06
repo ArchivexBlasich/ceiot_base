@@ -1,11 +1,9 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const {MongoClient} = require("mongodb");
-const PgMem = require("pg-mem");
+import express from "express";
+import { MongoClient } from "mongodb";
+import startPostgreSQLDatabase, { getDevices, getDevicesById, insertDevice } from "./db_postgre/index.js";
 
-const db = PgMem.newDb();
-
-    const render = require("./render.js");
+import render from "./render.js";
+import addAdminEndpoint from "./admin.js";
 // Measurements database setup and access
 
 let database = null;
@@ -35,14 +33,14 @@ async function getMeasurements() {
 
 const app = express();
 
-app.use(bodyParser.urlencoded({extended:false}));
+app.use(express.urlencoded({ extended: false }));
 
-app.use(express.static('spa/static'));
+app.use(express.static("spa/static"));
 
 const PORT = 8080;
 
 app.post('/measurement', function (req, res) {
--       console.log("device id    : " + req.body.id + " key         : " + req.body.key + " temperature : " + req.body.t + " humidity    : " + req.body.h);	
+       console.log("device id    : " + req.body.id + " key         : " + req.body.key + " temperature : " + req.body.t + " humidity    : " + req.body.h);	
     const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h});
 	res.send("received measurement into " +  insertedId);
 });
@@ -50,13 +48,13 @@ app.post('/measurement', function (req, res) {
 app.post('/device', function (req, res) {
 	console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
 
-    db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+"', '"+req.body.k+"')");
+    insertDevice(req.body.id, req.body.n, req.body.k);
 	res.send("received new device");
 });
 
 
 app.get('/web/device', function (req, res) {
-	var devices = db.public.many("SELECT * FROM devices").map( function(device) {
+	var devices = getDevices().map( function(device) {
 		console.log(device);
 		return '<tr><td><a href=/web/device/'+ device.device_id +'>' + device.device_id + "</a>" +
 			       "</td><td>"+ device.name+"</td><td>"+ device.key+"</td></tr>";
@@ -84,21 +82,33 @@ app.get('/web/device/:id', function (req,res) {
                 "</html>";
 
 
-    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+req.params.id+"'");
+    var device = getDevicesById(req.params.id);
+    
+    if (device == null || (Array.isArray(device) && device.length === 0)) {
+        res.status(404).send("El dispositivo NO existe");
+        return;
+    }
+    
     console.log(device);
     res.send(render(template,{id:device[0].device_id, key: device[0].key, name:device[0].name}));
 });	
 
 
 app.get('/term/device/:id', function (req, res) {
-    var red = "\33[31m";
-    var green = "\33[32m";
-    var blue = "\33[33m";
-    var reset = "\33[0m";
+    var red = "\x1b[31m";
+    var green = "\x1b[32m";
+    var blue = "\x1b[33m";
+    var reset = "\x1b[0m";
     var template = "Device name " + red   + "   {{name}}" + reset + "\n" +
 		   "       id   " + green + "       {{ id }} " + reset +"\n" +
 	           "       key  " + blue  + "  {{ key }}" + reset +"\n";
-    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+req.params.id+"'");
+    var device = getDevicesById(req.params.id);
+    
+    if (device == null || (Array.isArray(device) && device.length === 0)) {
+        res.status(404).send("El dispositivo NO existe");
+        return;
+    }
+    
     console.log(device);
     res.send(render(template,{id:device[0].device_id, key: device[0].key, name:device[0].name}));
 });
@@ -108,12 +118,11 @@ app.get('/measurement', async (req,res) => {
 });
 
 app.get('/device', function(req,res) {
-    res.send( db.public.many("SELECT * FROM devices") );
+    res.send( getDevices() );
 });
 
 startDatabase().then(async() => {
 
-    const addAdminEndpoint = require("./admin.js");
     addAdminEndpoint(app, render);
 
     await insertMeasurement({id:'00', t:'18', h:'78'});
@@ -122,16 +131,9 @@ startDatabase().then(async() => {
     await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
-    db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR)");
-    db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
-    db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
-    db.public.none("CREATE TABLE users (user_id VARCHAR, name VARCHAR, key VARCHAR)");
-    db.public.none("INSERT INTO users VALUES ('1','Ana','admin123')");
-    db.public.none("INSERT INTO users VALUES ('2','Beto','user123')");
+    startPostgreSQLDatabase();
+});
 
-    console.log("sql device database up");
-
-    app.listen(PORT, () => {
+app.listen(PORT, () => {
         console.log(`Listening at ${PORT}`);
     });
-});

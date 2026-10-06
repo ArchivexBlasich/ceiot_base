@@ -1,4 +1,4 @@
-const fs = require('fs');
+import { readFileSync } from 'fs';
 
 const addAdminEndpoint = function (app, render){
   app.get('/admin/:command', function(req,res) {
@@ -27,7 +27,7 @@ const addAdminEndpoint = function (app, render){
          }
        break;
        case "show":
-         msg = fs.readFileSync("../fixtures/" + req.query.file);
+         msg = readFileSync("../fixtures/" + req.query.file);
        break;
  
        break;
@@ -43,4 +43,4 @@ const addAdminEndpoint = function (app, render){
     res.send(render(template,{msg:msg}));
 })};
 
-module.exports = addAdminEndpoint;
+export default addAdminEndpoint;
