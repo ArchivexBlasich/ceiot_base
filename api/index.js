@@ -1,6 +1,6 @@
 import express from "express";
 import { MongoClient } from "mongodb";
-import startPostgreSQLDatabase, { getDevices, getDevicesById, insertDevice } from "./db_postgre/index.js";
+import { getDevices, getDevicesById, insertDevice, checkPostgres } from "./db_postgre/index.js";
 
 import render from "./render.js";
 import addAdminEndpoint from "./admin.js";
@@ -45,16 +45,16 @@ app.post('/measurement', function (req, res) {
 	res.send("received measurement into " +  insertedId);
 });
 
-app.post('/device', function (req, res) {
+app.post('/device', async (req, res) => {
 	console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
 
-    insertDevice(req.body.id, req.body.n, req.body.k);
+    await insertDevice(req.body.id, req.body.n, req.body.k);
 	res.send("received new device");
 });
 
 
-app.get('/web/device', function (req, res) {
-	var devices = getDevices().map( function(device) {
+app.get('/web/device', async (req, res) => {
+	var devices = (await getDevices()).map( function(device) {
 		console.log(device);
 		return '<tr><td><a href=/web/device/'+ device.device_id +'>' + device.device_id + "</a>" +
 			       "</td><td>"+ device.name+"</td><td>"+ device.key+"</td></tr>";
@@ -71,7 +71,7 @@ app.get('/web/device', function (req, res) {
 		"</html>");
 });
 
-app.get('/web/device/:id', function (req,res) {
+app.get('/web/device/:id', async (req, res) => {
     var template = "<html>"+
                      "<head><title>Sensor {{name}}</title></head>" +
                      "<body>" +
@@ -82,7 +82,7 @@ app.get('/web/device/:id', function (req,res) {
                 "</html>";
 
 
-    var device = getDevicesById(req.params.id);
+    var device = await getDevicesById(req.params.id);
     
     if (device == null || (Array.isArray(device) && device.length === 0)) {
         res.status(404).send("El dispositivo NO existe");
@@ -94,7 +94,7 @@ app.get('/web/device/:id', function (req,res) {
 });	
 
 
-app.get('/term/device/:id', function (req, res) {
+app.get('/term/device/:id', async (req, res) => {
     var red = "\x1b[31m";
     var green = "\x1b[32m";
     var blue = "\x1b[33m";
@@ -102,7 +102,7 @@ app.get('/term/device/:id', function (req, res) {
     var template = "Device name " + red   + "   {{name}}" + reset + "\n" +
 		   "       id   " + green + "       {{ id }} " + reset +"\n" +
 	           "       key  " + blue  + "  {{ key }}" + reset +"\n";
-    var device = getDevicesById(req.params.id);
+    var device = await getDevicesById(req.params.id);
     
     if (device == null || (Array.isArray(device) && device.length === 0)) {
         res.status(404).send("El dispositivo NO existe");
@@ -117,8 +117,8 @@ app.get('/measurement', async (req,res) => {
     res.send(await getMeasurements());
 });
 
-app.get('/device', function(req,res) {
-    res.send( getDevices() );
+app.get('/device', async (req,res) => {
+    res.send(await getDevices());
 });
 
 startDatabase().then(async() => {
@@ -131,7 +131,12 @@ startDatabase().then(async() => {
     await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
-    startPostgreSQLDatabase();
+    const ok = await checkPostgres();
+    if (!ok) {
+        console.error('postgres device database Down');
+    } else {
+        console.log('postgres device database Up');
+    }
 });
 
 app.listen(PORT, () => {

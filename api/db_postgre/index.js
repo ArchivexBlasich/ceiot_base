@@ -1,3 +1,3 @@
-export * from './postgreSelects.js';
-export * from './postgreInserts.js';
-export { default } from './start_postgre.js';
+export * from './selects.js';
+export * from './inserts.js';
+export { checkPostgres } from './pool.js';
