@@ -1,19 +1,17 @@
 import 'dotenv/config';
 import { Pool } from 'pg';
 
-if (!process.env.DB_HOST || !process.env.DB_PORT || !process.env.DB_USER || !process.env.DB_PASSWORD) {
+if (!process.env.DB_POSTGRESQL_HOST || !process.env.DB_POSTGRESQL_PORT || !process.env.DB_POSTGRESQL_USER || !process.env.DB_POSTGRESQL_PASSWORD) {
  throw new Error('Faltan variables de entorno:');
 }
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_DATABASE
+  user: process.env.DB_POSTGRESQL_USER,
+  password: process.env.DB_POSTGRESQL_PASSWORD,
+  host: process.env.DB_POSTGRESQL_HOST,
+  port: process.env.DB_POSTGRESQL_PORT,
+  database: process.env.DB_POSTGRESQL_DATABASE
 });
-
-export default pool;
 
 export async function checkPostgres() {
     try {
@@ -23,3 +21,5 @@ export async function checkPostgres() {
         return false;
     }
 }
+
+export default pool;

@@ -5,14 +5,15 @@
   "type": "module",
   "exports": "./index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "init": "docker compose up -d && node index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^18.0.6",
     "express": "^5.2.1",
-    "mongodb": "^7.5.0",
+    "mongodb": "^7.7.0",
     "pg": "^8.23.1"
   }
 }

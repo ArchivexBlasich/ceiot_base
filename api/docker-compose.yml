@@ -4,15 +4,29 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${DB_POSTGRESQL_PASSWORD}
+      POSTGRES_DB: ${DB_POSTGRESQL_DATABASE}
     ports:
-      - "5432:5432"
+      - "5432:${DB_POSTGRESQL_PORT}"
     restart: always
     volumes:
       - ./db_postgre/sql:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql/data
 
+  mongo-db:
+    image: mongo:7
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DB_MONGO_DATABASE}
+    volumes:
+      - ./db_mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - mongo:/data/db
+    ports:
+      - "27017:27017"
+
 volumes:
   pgdata:
+  mongo:
