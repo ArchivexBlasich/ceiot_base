@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "secrets.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -18,14 +19,6 @@
 #ifndef APP_CPU_NUM
 #define APP_CPU_NUM PRO_CPU_NUM
 #endif
-
-
-#define WIFI_SSID       ""
-#define WIFI_PASSWORD   ""
-
-#define SERVER_URL      "http://192.168.1.101:8080/measurement"
-
-#define DEVICE_ID "01"
 
 #define WIFI_CONNECTED_BIT BIT0
 
@@ -232,13 +225,13 @@ static void http_get(void)
  * --------------------------------------------------------- */
 
 
-static char *POST_DATA_TEMPLATE = "id="DEVICE_ID"&t=%0.2f&h=%0.2f";
+static char *POST_DATA_TEMPLATE = "id="DEVICE_ID"&t=%0.2f&p=%0.2f";
 
 static void http_post(float *pressure, float *temperature, float *humidity) {
 
     char post_data[64];
 
-    sprintf(post_data,POST_DATA_TEMPLATE, *temperature, *humidity);
+    sprintf(post_data,POST_DATA_TEMPLATE, *temperature, *pressure);
 
     ESP_LOGI(TAG, "POST %s", SERVER_URL);
     ESP_LOGI(TAG, "POST_DATA %s", post_data);
