@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "esp_mac.h"
 #include "nvs_flash.h"
 
 #include <bmp280.h>
@@ -224,14 +225,13 @@ static void http_get(void)
  * POST
  * --------------------------------------------------------- */
 
-
-static char *POST_DATA_TEMPLATE = "{\"id\":\""DEVICE_ID"\",\"t\":%0.2f,\"p\":%0.2f}";
-
-static void http_post(float *pressure, float *temperature, float *humidity) {
+static void http_post(float *pressure, float *temperature, float *humidity, uint8_t *mac) {
 
     char post_data[64];
 
-    sprintf(post_data,POST_DATA_TEMPLATE, *temperature, *pressure);
+    static char *POST_DATA_TEMPLATE = "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"t\":%0.2f,\"p\":%0.2f}";
+
+    sprintf(post_data,POST_DATA_TEMPLATE, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], *temperature, *pressure);
 
     ESP_LOGI(TAG, "POST %s", SERVER_URL);
     ESP_LOGI(TAG, "POST_DATA %s", post_data);
@@ -295,9 +295,19 @@ void app_main(void)
     ESP_ERROR_CHECK(i2cdev_init());
 
     ESP_LOGI(TAG, "bmp280 init...");
-    bmp280_test(&dev);    
+    bmp280_test(&dev);
 
     wifi_init();
+
+    uint8_t mac[6];
+    esp_err_t ret;
+
+    // Wi-Fi Station MAC Address
+    ret = esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Wi-Fi STA MAC Address: %02X:%02X:%02X:%02X:%02X:%02X",
+                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }
 
     /* Wait for WiFi */
     xEventGroupWaitBits(
@@ -315,7 +325,7 @@ void app_main(void)
     float pressure, temperature, humidity;
     while (1) { 
        bmp280_read(&dev, &pressure, &temperature, &humidity);
-       http_post(&pressure, &temperature, &humidity);
+       http_post(&pressure, &temperature, &humidity, mac);
        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

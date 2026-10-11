@@ -45,3 +45,6 @@ https://medium.com/@finnkumar6/understanding-router-in-express-js-a-complete-gui
 
 ### Como enviar json desde el dispositivo
 https://esp32.com/viewtopic.php?t=6584
+
+### Como obtener la MAC del esp32
+https://randomnerdtutorials.com/esp-idf-esp32-mac-address/
