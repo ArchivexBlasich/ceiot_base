@@ -8,6 +8,7 @@ import { deviceRoutes, measurementRoutes, webRoutes, termRoutes, adminRoutes } f
 
 const app = express();
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(express.static("spa/static"));

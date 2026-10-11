@@ -225,7 +225,7 @@ static void http_get(void)
  * --------------------------------------------------------- */
 
 
-static char *POST_DATA_TEMPLATE = "id="DEVICE_ID"&t=%0.2f&p=%0.2f";
+static char *POST_DATA_TEMPLATE = "{\"id\":\""DEVICE_ID"\",\"t\":%0.2f,\"p\":%0.2f}";
 
 static void http_post(float *pressure, float *temperature, float *humidity) {
 
@@ -252,7 +252,7 @@ static void http_post(float *pressure, float *temperature, float *humidity) {
     esp_http_client_set_header(
         client,
         "Content-Type",
-        "application/x-www-form-urlencoded"
+        "application/json"
     );
 
     esp_http_client_set_post_field(

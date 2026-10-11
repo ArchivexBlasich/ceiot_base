@@ -42,3 +42,6 @@ https://sql.holt.courses/lessons/data/nodejs-and-postgresql
 
 ### Uso de rutas en Express
 https://medium.com/@finnkumar6/understanding-router-in-express-js-a-complete-guide-7d2cece2b757
+
+### Como enviar json desde el dispositivo
+https://esp32.com/viewtopic.php?t=6584
