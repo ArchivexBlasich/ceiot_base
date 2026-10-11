@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "string.h"
 #include <string.h>
 #include "secrets.h"
 
@@ -225,19 +226,82 @@ static void http_get(void)
  * POST
  * --------------------------------------------------------- */
 
-static void http_post(float *pressure, float *temperature, float *humidity, uint8_t *mac) {
+static void http_post_measurements(float *pressure, float *temperature, float *humidity, char *mac) {
 
     char post_data[64];
 
-    static char *POST_DATA_TEMPLATE = "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"t\":%0.2f,\"p\":%0.2f}";
+    static char *POST_DATA_TEMPLATE = "{\"id\":\"%s\",\"t\":%0.2f,\"p\":%0.2f}";
 
-    sprintf(post_data,POST_DATA_TEMPLATE, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], *temperature, *pressure);
+    sprintf(post_data,POST_DATA_TEMPLATE, mac, *temperature, *pressure);
 
-    ESP_LOGI(TAG, "POST %s", SERVER_URL);
+    char endpoint[128];
+    strcpy(endpoint, SERVER_URL);
+    strcat(endpoint, "measurement");
+
+    ESP_LOGI(TAG, "POST %s", endpoint);
     ESP_LOGI(TAG, "POST_DATA %s", post_data);
 
     esp_http_client_config_t config = {
-        .url = SERVER_URL,
+        .url = endpoint,
+        .event_handler = http_event_handler,
+    };
+
+    esp_http_client_handle_t client =
+        esp_http_client_init(&config);
+
+    esp_http_client_set_method(
+        client,
+        HTTP_METHOD_POST
+    );
+
+    esp_http_client_set_header(
+        client,
+        "Content-Type",
+        "application/json"
+    );
+
+    esp_http_client_set_post_field(
+        client,
+        post_data,
+        strlen(post_data)
+    );
+
+    esp_err_t err =
+        esp_http_client_perform(client);
+
+    if (err == ESP_OK) {
+
+        ESP_LOGI(TAG,
+                 "POST status = %d",
+                 esp_http_client_get_status_code(client));
+
+    } else {
+
+        ESP_LOGE(TAG,
+                 "POST failed: %s",
+                 esp_err_to_name(err));
+    }
+
+    esp_http_client_cleanup(client);
+}
+
+static void http_post_device(char *mac, char * device_name, char * device_key) {
+
+    char post_data[64];
+
+    static char *POST_DATA_TEMPLATE = "{\"id\":\"%s\",\"n\":\"%s\",\"k\":\"%s\"}";
+
+    sprintf(post_data,POST_DATA_TEMPLATE, mac, device_name, device_key);
+
+    char endpoint[128];
+    strcpy(endpoint, SERVER_URL);
+    strcat(endpoint, "device");
+
+    ESP_LOGI(TAG, "POST %s", endpoint);
+    ESP_LOGI(TAG, "POST_DATA %s", post_data);
+
+    esp_http_client_config_t config = {
+        .url = endpoint,
         .event_handler = http_event_handler,
     };
 
@@ -301,11 +365,14 @@ void app_main(void)
 
     uint8_t mac[6];
     esp_err_t ret;
+    char mac_str[18];
 
     // Wi-Fi Station MAC Address
     ret = esp_read_mac(mac, ESP_MAC_WIFI_STA);
     if (ret == ESP_OK) {
         ESP_LOGI(TAG, "Wi-Fi STA MAC Address: %02X:%02X:%02X:%02X:%02X:%02X",
+                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        sprintf(mac_str, "%02X:%02X:%02X:%02X:%02X:%02X",
                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     }
 
@@ -323,9 +390,11 @@ void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     float pressure, temperature, humidity;
+
+    http_post_device(mac_str, "ESP32-BMP280", "esp-key");
     while (1) { 
        bmp280_read(&dev, &pressure, &temperature, &humidity);
-       http_post(&pressure, &temperature, &humidity, mac);
+       http_post_measurements(&pressure, &temperature, &humidity, mac_str);
        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
