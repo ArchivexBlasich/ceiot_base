@@ -48,3 +48,8 @@ https://esp32.com/viewtopic.php?t=6584
 
 ### Como obtener la MAC del esp32
 https://randomnerdtutorials.com/esp-idf-esp32-mac-address/
+
+### Doc util que me sirvio para implementar el desafio temp_internal
+https://www.cyberciti.biz/faq/bash-infinite-loop/
+https://askubuntu.com/questions/1059170/how-do-i-find-the-temperatures-without-3rd-party-software
+https://stackoverflow.com/questions/4651437/how-do-i-set-a-variable-to-the-output-of-a-command-in-bash
